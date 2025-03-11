@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Pie Chart in Three.js</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        camera.position.z = 10;
+
+        // Data for the pie chart
+        const data = [
+            { value: 30, color: 0xff0000 }, // Red
+            { value: 20, color: 0x00ff00 }, // Green
+            { value: 50, color: 0x0000ff }  // Blue
+        ];
+
+        // Calculate total value and angles for each segment
+        const totalValue = data.reduce((sum, { value }) => sum + value, 0);
+        let startAngle = 0;
+        data.forEach(segment => {
+            segment.startAngle = startAngle;
+            segment.endAngle = startAngle + (segment.value / totalValue) * Math.PI * 2;
+            startAngle = segment.endAngle;
+        });
+
+        // Create the pie chart segments
+        const radius = 2;
+        const height = 1;
+        const segments = [];
+
+        data.forEach(segment => {
+            const geometry = new THREE.CylinderGeometry(
+                radius, radius, height,
+                32, 1, false,
+                segment.startAngle, segment.endAngle - segment.startAngle
+            );
+            const material = new THREE.MeshBasicMaterial({ color: segment.color });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = Math.PI / 2; // Rotate to make it look like a pie chart
+            scene.add(mesh);
+            segments.push(mesh);
+        });
+
+        // Add lighting to the scene
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the pie chart for a better view
+            segments.forEach(segment => {
+                segment.rotation.y += 0.01;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Bar Chart with Labels and Values</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xffffff, 1); // White background
+
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        camera.position.set(10, 10, 10);
+        camera.lookAt(0, 0, 0);
+
+        // Data for the bar chart
+        const data = [
+            { value: 5, color: 0xff0000, label: 'Ahh' }, // Red
+            { value: 8, color: 0x00ff00, label: 'Bjj' }, // Green
+            { value: 3, color: 0x0000ff, label: 'Cjj' },  // Blue
+            { value: 6, color: 0xffff00, label: 'Djj' },  // Yellow
+            { value: 9, color: 0xff00ff, label: 'Ejk' }   // Magenta
+        ];
+
+        // Create bars
+        const barWidth = 1;
+        const barDepth = 1;
+        const spacing = 1.5; // Space between bars
+        const bars = [];
+
+        data.forEach((item, index) => {
+            const barHeight = item.value;
+            const geometry = new THREE.BoxGeometry(barWidth, barHeight, barDepth);
+            const material = new THREE.MeshPhongMaterial({ color: item.color });
+            const bar = new THREE.Mesh(geometry, material);
+
+            // Position the bar
+            bar.position.x = (index - (data.length - 1) / 2) * spacing;
+            bar.position.y = barHeight / 2; // Center the bar on the ground
+
+            scene.add(bar);
+            bars.push(bar);
+
+            // Add label and value
+            const label = createTextLabel(`${item.label}: ${item.value}`, bar.position.x, barHeight + 0.5, bar.position.z);
+            scene.add(label);
+        });
+
+        // Function to create text labels
+        function createTextLabel(text, x, y, z) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = 'Bold 60px Arial';
+            context.fillStyle = 'black';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, 100, 25); // Center text on the canvas
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter; // Improve texture quality
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, z);
+            sprite.scale.set(2, 1, 1); // Adjust scale as needed
+            return sprite;
+        }
+
+        // Add lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        // Add a grid helper for reference
+        const gridHelper = new THREE.GridHelper(10, 10);
+        scene.add(gridHelper);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the camera for a better view (optional)
+            camera.position.x = Math.sin(Date.now() * 0.001) * 15;
+            camera.position.z = Math.cos(Date.now() * 0.001) * 15;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
