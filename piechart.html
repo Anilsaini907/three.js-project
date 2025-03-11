@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Pie Chart in Three.js</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xffffff, 1); // White background
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        // Data for the pie chart
+        const data = [
+            { value: 30, color: 0xff0000, label: 'Segment 1' }, // Red
+            { value: 20, color: 0x00ff00, label: 'Segment 2' }, // Green
+            { value: 50, color: 0x0000ff, label: 'Segment 3' }  // Blue
+        ];
+
+        // Calculate total value and angles for each segment
+        const totalValue = data.reduce((sum, { value }) => sum + value, 0);
+        let startAngle = 0;
+        data.forEach(segment => {
+            segment.startAngle = startAngle;
+            segment.endAngle = startAngle + (segment.value / totalValue) * Math.PI * 2;
+            startAngle = segment.endAngle;
+        });
+
+        // Create a group for pie chart segments and labels
+        const pieGroup = new THREE.Group();
+        scene.add(pieGroup);
+
+        const radius = 2;
+        const height = 1;
+
+        // Function to create text labels as sprites
+        function createTextLabel(text, x, y, z) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = 'Bold 48px Arial';
+            context.fillStyle = 'black'; // Black text
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, z);
+            sprite.scale.set(2, 1, 1); // Adjust scale as needed
+            return sprite;
+        }
+
+        // Create pie chart segments and labels
+        data.forEach(segment => {
+            // Create segment
+            const geometry = new THREE.CylinderGeometry(
+                radius, radius, height,
+                32, 1, false,
+                segment.startAngle, segment.endAngle - segment.startAngle
+            );
+            const material = new THREE.MeshPhongMaterial({ color: segment.color });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = Math.PI / 2; // Rotate to make it horizontal
+            pieGroup.add(mesh);
+
+            // Add label
+            const midAngle = (segment.startAngle + segment.endAngle) / 2;
+            const labelX = (radius + 0.5) * Math.cos(midAngle);
+            const labelY = (radius + 0.5) * Math.sin(midAngle);
+            const label = createTextLabel(segment.label, labelX, height / 2 + 0.1, labelY);
+            pieGroup.add(label);
+        });
+
+        // Add lighting to the scene
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the entire pie chart group
+            pieGroup.rotation.y += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
